@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include "procs.hpp"
 #include <stdlib.h>
 #include <math.h>
+#include <dirent.h>
 
-unsigned long int get_mem_usage(int *pid) {
+unsigned long long int get_mem_usage(int *pid) {
     FILE *f;
     char path[257];
-    unsigned long int usage;
+    unsigned long long int usage;
 
     sprintf(path, "/proc/%d/statm", *pid);
 
@@ -17,10 +19,10 @@ unsigned long int get_mem_usage(int *pid) {
         return FILE_ERROR;
     }
 
-    fscanf(f, "%lu", &usage);
+    fscanf(f, "%llu", &usage);
     fclose(f);
 
-    return usage * getpagesize();
+    return usage * (unsigned long long int)getpagesize();
 }
 
 int get_pid_cpu_stat(int *pid, long unsigned int *total_time, long long unsigned int *start_time) {
@@ -42,9 +44,9 @@ int get_pid_cpu_stat(int *pid, long unsigned int *total_time, long long unsigned
 	return 1;
 }
 
-long int get_uptime() {
+long long int get_uptime() {
 	FILE *f;
-	long int uptime;
+	long long int uptime;
 
 	f = fopen("/proc/uptime", "r");
 
@@ -52,7 +54,7 @@ long int get_uptime() {
 		return FILE_ERROR;
 	}
 
-	fscanf(f, "%ld", &uptime);
+	fscanf(f, "%lld", &uptime);
 	fclose(f);
 
 	return uptime;
@@ -68,9 +70,44 @@ int get_cpu_usage(int *pid) {
 		return -1;
 	}
 
-	long long unsigned int seconds = get_uptime() - (start_time/sysconf(_SC_CLK_TCK));
+	unsigned long long int seconds = get_uptime() - (start_time/sysconf(_SC_CLK_TCK));
 
-	printf("%lf\n", ((double) ((double) total_time/sysconf(_SC_CLK_TCK)) / seconds));
+    return round(100 *((double) (total_time/sysconf(_SC_CLK_TCK)) / seconds));
+}
 
-    return round(100 *((double) ((double) total_time/sysconf(_SC_CLK_TCK)) / seconds));
+int walk_procs(int *cpu, int *mem) {
+    DIR *d;
+    dirent *entry;
+
+    d = opendir("/proc");
+    if (d == NULL) {
+        return OPEN_DIR_ERROR;
+    }
+
+    pid_t _pid, _ppid;
+    _pid = getpid();
+    _ppid = getppid();
+
+    while (1) {
+        entry = readdir(d);
+        if (entry == NULL) break;
+        if (entry->d_type != DT_DIR) continue;
+        if (entry->d_name[0] < 48 || entry->d_name[0] > 57 ) continue;
+
+        int pid = atoi(entry->d_name);
+
+        if (pid == _pid || pid == _ppid) continue;
+
+        int cpu_u, mem_u;
+
+        cpu_u = get_cpu_usage(&pid);
+        mem_u = (get_mem_usage(&pid) / 1024 / 1024);
+
+        if (cpu_u < *cpu && mem_u < *mem) continue;
+
+        printf("PID: %5d\tCPU: %3d%%\tMEM: %6d MB\n", pid, cpu_u, mem_u);
+    }
+
+
+    return 0;
 }

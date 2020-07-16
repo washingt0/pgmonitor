@@ -2,14 +2,25 @@
 #include "procs.hpp"
 
 int main(int argc, char *argv[]) {
-	if (argc < 2) {
-		std::cout << "Missing PID" << std::endl;
-		return 1;
-	}
+    int cpu, mem;
+    cpu = 30;
+    mem = 1000;
 
-    int a = atoi(argv[1]);
-    std::cout << get_mem_usage(&a) / 1024 / 1024 << " MB"<< std::endl;
-	std::cout << get_cpu_usage(&a) << " %" <<  std::endl;
+    if (argc == 1) {
+        printf("Using default values: CPU -> %d%%\tMEM -> %d MB\n", cpu, mem);
+        printf("To define yours use %s <CPU> <MEM>\n\n", argv[0]);
+    }
+
+    if (argc > 3) {
+        mem = atoi(argv[2]);
+    }
+
+    if (argc > 2) {
+        cpu = atoi(argv[1]);
+    }
+
+
+    walk_procs(&cpu, &mem);
 
     return 0;
 }
