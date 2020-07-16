@@ -11,14 +11,13 @@ int main(int argc, char *argv[]) {
         printf("To define yours use %s <CPU> <MEM>\n\n", argv[0]);
     }
 
-    if (argc > 3) {
-        mem = atoi(argv[2]);
-    }
-
     if (argc > 2) {
-        cpu = atoi(argv[1]);
+        mem = (int) strtol(&argv[2][0], nullptr, 10);
     }
 
+    if (argc > 1) {
+        cpu = (int) strtol(&argv[1][0], nullptr, 10);
+    }
 
     walk_procs(&cpu, &mem);
 

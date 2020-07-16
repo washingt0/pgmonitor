@@ -3,6 +3,6 @@
 
 int get_cpu_usage(int *pid);
 
-unsigned long long int get_mem_usage(int *pid);
+unsigned long long int get_mem_usage(const int *pid);
 
-int walk_procs(int *cpu, int *mem);
+int walk_procs(const int *cpu, const int *mem);
