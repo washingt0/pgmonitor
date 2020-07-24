@@ -1,5 +1,6 @@
 #include <iostream>
 #include "procs.hpp"
+#include <stdexcept>
 
 int main(int argc, char *argv[]) {
     int cpu, mem;
@@ -19,7 +20,17 @@ int main(int argc, char *argv[]) {
         cpu = (int) strtol(&argv[1][0], nullptr, 10);
     }
 
-    walk_procs(&cpu, &mem);
+    try {
+        walk_procs(&cpu, &mem);
+    } catch (std::runtime_error &e) {
+        std::cout << e.what() << std::endl;
+    } catch (std::invalid_argument &e) {
+        std::cout << e.what() << std::endl;
+    } catch (std::exception &e) {
+        std::cout << e.what() << std::endl;
+    } catch (...) {
+        std::cout << "internal exception" << std::endl;
+    }
 
     return 0;
 }

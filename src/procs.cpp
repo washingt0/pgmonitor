@@ -1,9 +1,13 @@
 #include <cstdio>
-#include <iostream>
 #include <unistd.h>
 #include "procs.hpp"
 #include <cmath>
 #include <dirent.h>
+#include <stdexcept>
+#include <pg.hpp>
+#include <json/json.h>
+#include <iostream>
+#include <cstdlib>
 
 unsigned long long int get_mem_usage(const int *pid) {
     FILE *f;
@@ -75,13 +79,14 @@ int get_cpu_usage(int *pid) {
     return (int) round(100 *((double) ((double)total_time/(double)sysconf(_SC_CLK_TCK)) / (double) seconds));
 }
 
-int walk_procs(const int *cpu, const int *mem) {
+void walk_procs(const int *cpu, const int *mem) {
     DIR *d;
     dirent *entry;
+    Conn c = Conn(getenv("POSTGRES_URI"));
 
     d = opendir("/proc");
     if (d == nullptr) {
-        return OPEN_DIR_ERROR;
+        throw std::runtime_error(OPEN_DIR_ERROR);
     }
 
     pid_t _pid, _ppid;
@@ -105,10 +110,17 @@ int walk_procs(const int *cpu, const int *mem) {
 
         if (cpu_u < *cpu && mem_u < *mem) continue;
 
-        printf("PID: %5d\tCPU: %3d%%\tMEM: %6d MB\n", pid, cpu_u, mem_u);
+        pid_info* data = c.get_pid_info(&pid);
+
+        Json::Value out;
+
+        out["pid"] = data->pid;
+        out["datname"] = data->datname;
+        out["usename"] = data->usename;
+        out["application_name"] = data->application_name;
+
+        std::cout << out << std::endl;
     }
 
     closedir(d);
-
-    return 0;
 }
